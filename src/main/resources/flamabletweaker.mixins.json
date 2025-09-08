@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.leclowndu93150.flamabletweaker.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "flamabletweaker.refmap.json",
+  "mixins": [
+    "FireBlockAccessor",
+    "FireBlockMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
