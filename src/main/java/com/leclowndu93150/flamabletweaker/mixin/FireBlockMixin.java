@@ -1,21 +1,16 @@
 package com.leclowndu93150.flamabletweaker.mixin;
 
-import com.leclowndu93150.flamabletweaker.FlammabilityConfig;
+import com.leclowndu93150.flamabletweaker.compat.DomumOrnamentumCompat;
 import com.ldtteam.domumornamentum.block.IMateriallyTexturedBlock;
-import com.ldtteam.domumornamentum.block.IMateriallyTexturedBlockComponent;
-import com.ldtteam.domumornamentum.entity.block.IMateriallyTexturedBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FireBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,49 +27,32 @@ public abstract class FireBlockMixin {
         method = "tryCatchFire",
         at = @At("HEAD"),
         cancellable = true,
-            remap = false
+        remap = false
     )
     private void checkDomumOrnamentumFlammability(Level level, BlockPos pos, int p_53434_, RandomSource randomSource, int p_53436_, Direction face, CallbackInfo ci) {
+        if (!DomumOrnamentumCompat.isModLoaded()) {
+            return;
+        }
+        
         BlockState blockState = level.getBlockState(pos);
         Block block = blockState.getBlock();
-
+        
         if (block instanceof IMateriallyTexturedBlock materiallyTexturedBlock) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
+            Block materialBlock = DomumOrnamentumCompat.getMaterialBlock(level, pos, materiallyTexturedBlock);
             
-            if (blockEntity instanceof IMateriallyTexturedBlockEntity texturedEntity) {
-                IMateriallyTexturedBlockComponent mainComponent = materiallyTexturedBlock.getMainComponent();
-                if (mainComponent != null) {
-                    Block materialBlock = texturedEntity.getTextureData()
-                        .getTexturedComponents()
-                        .get(mainComponent.getId());
-                    
-                    if (materialBlock != null) {
-                        ResourceLocation materialId = ForgeRegistries.BLOCKS.getKey(materialBlock);
-                        if (materialId != null) {
-                            String materialName = materialId.getPath().toLowerCase();
-
-                            boolean isFlammable = FlammabilityConfig.flammableKeywords.stream()
-                                .anyMatch(materialName::contains) &&
-                                FlammabilityConfig.excludedKeywords.stream()
-                                .noneMatch(materialName::contains);
-                            
-                            if (isFlammable) {
-                                int customFlammability = materialName.contains("log") || materialName.contains("wood") ? 5 : 20;
-
-                                if (randomSource.nextInt(p_53434_) < customFlammability) {
-                                    blockState.onCaughtFire(level, pos, face, null);
-                                    if (randomSource.nextInt(p_53434_ + 10) < 5 && !level.isRainingAt(pos)) {
-                                        int newAge = Math.min(p_53434_ + randomSource.nextInt(5) / 4, 15);
-                                        level.setBlock(pos, this.getStateWithAge(level, pos, newAge), 3);
-                                    } else {
-                                        level.removeBlock(pos, false);
-                                    }
-                                }
-                                ci.cancel();
-                            }
-                        }
+            if (materialBlock != null && DomumOrnamentumCompat.isMaterialFlammable(materialBlock)) {
+                int customFlammability = DomumOrnamentumCompat.getFlammabilityValue(materialBlock);
+                
+                if (randomSource.nextInt(p_53434_) < customFlammability) {
+                    blockState.onCaughtFire(level, pos, face, null);
+                    if (randomSource.nextInt(p_53434_ + 10) < 5 && !level.isRainingAt(pos)) {
+                        int newAge = Math.min(p_53434_ + randomSource.nextInt(5) / 4, 15);
+                        level.setBlock(pos, this.getStateWithAge(level, pos, newAge), 3);
+                    } else {
+                        level.removeBlock(pos, false);
                     }
                 }
+                ci.cancel();
             }
         }
     }
@@ -83,39 +61,15 @@ public abstract class FireBlockMixin {
         method = "canCatchFire",
         at = @At("HEAD"),
         cancellable = true,
-            remap = false
+        remap = false
     )
     private void checkDomumOrnamentumCanCatchFire(BlockGetter world, BlockPos pos, Direction face, CallbackInfoReturnable<Boolean> cir) {
-        BlockState blockState = world.getBlockState(pos);
-        Block block = blockState.getBlock();
+        if (!DomumOrnamentumCompat.isModLoaded()) {
+            return;
+        }
         
-        if (block instanceof IMateriallyTexturedBlock materiallyTexturedBlock) {
-            BlockEntity blockEntity = world.getBlockEntity(pos);
-            
-            if (blockEntity instanceof IMateriallyTexturedBlockEntity texturedEntity) {
-                IMateriallyTexturedBlockComponent mainComponent = materiallyTexturedBlock.getMainComponent();
-                if (mainComponent != null) {
-                    Block materialBlock = texturedEntity.getTextureData()
-                        .getTexturedComponents()
-                        .get(mainComponent.getId());
-                    
-                    if (materialBlock != null) {
-                        ResourceLocation materialId = ForgeRegistries.BLOCKS.getKey(materialBlock);
-                        if (materialId != null) {
-                            String materialName = materialId.getPath().toLowerCase();
-                            
-                            boolean isFlammable = FlammabilityConfig.flammableKeywords.stream()
-                                .anyMatch(materialName::contains) &&
-                                FlammabilityConfig.excludedKeywords.stream()
-                                .noneMatch(materialName::contains);
-                            
-                            if (isFlammable) {
-                                cir.setReturnValue(true);
-                            }
-                        }
-                    }
-                }
-            }
+        if (DomumOrnamentumCompat.isFlammableDOBlock(world, pos)) {
+            cir.setReturnValue(true);
         }
     }
 }
