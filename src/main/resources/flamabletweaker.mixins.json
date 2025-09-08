@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "flamabletweaker.refmap.json",
   "mixins": [
-    "FireBlockAccessor"
+    "FireBlockAccessor",
+    "FireBlockMixin"
   ],
   "client": [
   ],

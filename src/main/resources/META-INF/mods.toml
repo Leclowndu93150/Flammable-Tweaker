@@ -61,3 +61,10 @@ mandatory = true
 versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
+# Optional dependency for Domum Ornamentum support
+[[dependencies."${mod_id}"]]
+modId = "domum_ornamentum"
+mandatory = false
+versionRange = "[1.0.0,)"
+ordering = "AFTER"
+side = "BOTH"
