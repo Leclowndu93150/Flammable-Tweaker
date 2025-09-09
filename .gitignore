@@ -112,6 +112,9 @@ gradle-app.setting
 **/build/
 
 # Common working directory
+
+domodsource
+
 run/
 runs/
 
